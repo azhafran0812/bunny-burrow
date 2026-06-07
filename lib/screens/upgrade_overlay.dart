@@ -1,46 +1,21 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/game_viewmodel.dart';
 import '../game/bunny_game.dart';
 
 class UpgradeOverlay extends StatelessWidget {
   final BunnyGame game;
   const UpgradeOverlay({super.key, required this.game});
 
-  // Balanced mathematical parameters
-  final int baseCost = 10;
-  final double costMultiplier = 1.15;
-
-  int calculateCost(int currentLevel) {
-    return (baseCost * pow(costMultiplier, currentLevel)).toInt();
-  }
-
-  void buyUpgrade(Box box, int cost, int currentLevel) {
-    int currentJoy = box.get('joy', defaultValue: 0);
-    if (currentJoy >= cost) {
-      box.put('joy', currentJoy - cost);
-      box.put('tap_level', currentLevel + 1);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: Hive.box(
-        'playerData',
-      ).listenable(keys: ['joy', 'tap_level']),
-      builder: (context, Box box, _) {
-        int currentJoy = box.get('joy', defaultValue: 0);
-        int tapLevel = box.get('tap_level', defaultValue: 0);
-        int nextCost = calculateCost(tapLevel);
-        bool canAfford = currentJoy >= nextCost;
-        int burrowLevel = box.get('burrow_level', defaultValue: 1);
-        int expansionCost = burrowLevel == 1
-            ? 500
-            : 5000; // Stage 2 is 500, Stage 3 is 5000
-        bool canAffordExpansion = currentJoy >= expansionCost;
+    return Consumer<GameViewModel>(
+      builder: (context, viewModel, child) {
+        int nextTapCost = viewModel.calculateTapUpgradeCost();
+        bool canAffordTap = viewModel.joy >= nextTapCost;
+        bool canAffordExpansion = viewModel.joy >= viewModel.expansionCost;
 
-return SafeArea(
+        return SafeArea(
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -55,7 +30,6 @@ return SafeArea(
                 ],
               ),
               child: Column(
-                // Changed to Column to stack the two upgrades
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // --- TAP POWER UPGRADE ---
@@ -66,14 +40,14 @@ return SafeArea(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Tap Power (Lv. $tapLevel)',
+                            'Tap Power (Lv. ${viewModel.tapLevel})',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),
                           Text(
-                            'Yields +${tapLevel + 2} per tap',
+                            'Yields +${viewModel.tapLevel + 2} per tap',
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 12,
@@ -82,16 +56,17 @@ return SafeArea(
                         ],
                       ),
                       ElevatedButton(
-                        onPressed: canAfford
-                            ? () => buyUpgrade(box, nextCost, tapLevel)
+                        // Tell the ViewModel to buy it!
+                        onPressed: canAffordTap
+                            ? () => viewModel.buyTapUpgrade()
                             : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF8C00),
                         ),
                         child: Text(
-                          canAfford
-                              ? 'Buy: 🥕$nextCost'
-                              : 'Locked: 🥕$nextCost',
+                          canAffordTap
+                              ? 'Buy: 🥕$nextTapCost'
+                              : 'Locked: 🥕$nextTapCost',
                         ),
                       ),
                     ],
@@ -107,7 +82,7 @@ return SafeArea(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Dig Deeper (Stage ${burrowLevel + 1})',
+                            'Dig Deeper (Stage ${viewModel.burrowLevel + 1})',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -122,15 +97,16 @@ return SafeArea(
                           ),
                         ],
                       ),
-                      if (burrowLevel < 3)
+                      if (viewModel.burrowLevel < 3)
                         ElevatedButton(
                           onPressed: canAffordExpansion
                               ? () {
-                                  box.put(
-                                    'joy',
-                                    currentJoy - expansionCost,
-                                  ); // Deduct Joy
-                                  game.unlockNextStage(); // Trigger the animation!
+                                  // Tell the ViewModel to process the purchase
+                                  bool success = viewModel.buyBurrowExpansion();
+                                  // If successful, tell Flame to animate the dirt!
+                                  if (success) {
+                                    game.unlockNextStage();
+                                  }
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
@@ -138,8 +114,8 @@ return SafeArea(
                           ),
                           child: Text(
                             canAffordExpansion
-                                ? 'Dig: 🥕$expansionCost'
-                                : 'Locked: 🥕$expansionCost',
+                                ? 'Dig: 🥕${viewModel.expansionCost}'
+                                : 'Locked: 🥕${viewModel.expansionCost}',
                           ),
                         )
                       else

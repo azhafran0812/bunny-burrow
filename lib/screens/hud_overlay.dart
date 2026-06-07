@@ -1,20 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '../game/bunny_game.dart';
+import 'package:provider/provider.dart'; 
+import '../viewmodels/game_viewmodel.dart'; 
 
 class HudOverlay extends StatelessWidget {
-  final BunnyGame game;
-  const HudOverlay({super.key, required this.game});
+  const HudOverlay({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // This listens to the 'joy' key in the database.
-    // Whenever it changes, this widget rebuilds automatically!
-    return ValueListenableBuilder(
-      valueListenable: Hive.box('playerData').listenable(keys: ['joy']),
-      builder: (context, Box box, _) {
-        final joy = box.get('joy', defaultValue: 0);
-
+    return Consumer<GameViewModel>(
+      builder: (context, viewModel, child) {
         return SafeArea(
           child: Align(
             alignment: Alignment.topCenter,
@@ -22,9 +16,7 @@ class HudOverlay extends StatelessWidget {
               margin: const EdgeInsets.only(top: 20),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(
-                  0.85,
-                ), // Soft, readable background
+                color: Colors.white.withOpacity(0.85),
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: const [
                   BoxShadow(
@@ -35,7 +27,8 @@ class HudOverlay extends StatelessWidget {
                 ],
               ),
               child: Text(
-                '🥕 $joy Joy',
+                // We ask the ViewModel for the current joy!
+                '🥕 ${viewModel.joy} Joy',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

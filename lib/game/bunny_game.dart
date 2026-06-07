@@ -10,9 +10,12 @@ import '../components/ancestor_carrot.dart';
 import '../components/furniture_component.dart';
 import '../models/furniture_model.dart';
 import '../components/dirt_block.dart';
+import '../viewmodels/game_viewmodel.dart';
 
 class BunnyGame extends FlameGame
     with WidgetsBindingObserver, PanDetector, ScrollDetector {
+      final GameViewModel viewModel;
+      BunnyGame(this.viewModel);
   double _secondTicker = 0.0;
   final int maxOfflineSeconds = 12 * 60 * 60;
   int lastOfflineEarnings = 0;
