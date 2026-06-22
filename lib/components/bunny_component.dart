@@ -4,16 +4,27 @@ import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
 import '../game/bunny_game.dart';
 import 'burrow_door.dart';
-import 'wander_zone.dart'; // <-- ADDED THIS IMPORT!
+import 'wander_zone.dart';
 
-class BunnyComponent extends PositionComponent with HasGameRef<BunnyGame> {
+// 1. Define the possible states for our animation group
+enum BunnyState { idle, hopping }
+
+// 2. Change the extension to SpriteAnimationGroupComponent
+class BunnyComponent extends SpriteAnimationGroupComponent<BunnyState>
+    with HasGameRef<BunnyGame> {
   int currentStage;
   final Random _random = Random();
+
+  // Keep track of the bunny's direction so we can flip the sprite!
+  bool isFacingRight = true;
 
   BunnyComponent({required this.currentStage, required Vector2 startPosition})
     : super(
         position: startPosition,
-        size: Vector2(40, 40),
+        size: Vector2(
+          128,
+          128,
+        ), // Physical hitbox stays 40x40, the 128x128 art scales to fit!
         anchor: Anchor.center,
       );
 
@@ -21,18 +32,57 @@ class BunnyComponent extends PositionComponent with HasGameRef<BunnyGame> {
   Future<void> onLoad() async {
     super.onLoad();
 
-    // Placeholder for your drawn Bunny Art!
-    add(RectangleComponent(size: size, paint: Paint()..color = Colors.white));
+    // 3. Load and slice the Idle Sprite Sheet
+    final idleAnimation = await gameRef.loadSpriteAnimation(
+      'bunny_idle.png',
+      SpriteAnimationData.sequenced(
+        amount: 5, // 640px / 128px = 5 frames
+        stepTime: 0.2, // Speed of the idle breathing/twitching
+        textureSize: Vector2(128, 128),
+      ),
+    );
+
+    // 4. Load and slice the Hop Sprite Sheet
+    final hopAnimation = await gameRef.loadSpriteAnimation(
+      'bunny_hop.png',
+      SpriteAnimationData.sequenced(
+        amount: 5,
+        stepTime: 0.1, // Faster frame rate for moving
+        textureSize: Vector2(128, 128),
+      ),
+    );
+
+    // 5. Register the animations to our states
+    animations = {
+      BunnyState.idle: idleAnimation,
+      BunnyState.hopping: hopAnimation,
+    };
+
+    // Set the starting animation
+    current = BunnyState.idle;
 
     // Start the AI loop 2 seconds after spawning
     Future.delayed(const Duration(seconds: 2), _decideNextAction);
   }
 
+  // --- DIRECTION HELPER ---
+  void _faceTarget(Vector2 target) {
+    // If target is to our left, but we are facing right -> FLIP LEFT
+    if (target.x < position.x && isFacingRight) {
+      flipHorizontallyAroundCenter();
+      isFacingRight = false;
+    }
+    // If target is to our right, but we are facing left -> FLIP RIGHT
+    else if (target.x > position.x && !isFacingRight) {
+      flipHorizontallyAroundCenter();
+      isFacingRight = true;
+    }
+  }
+
   // --- THE AI LOOP ---
   void _decideNextAction() {
-    if (!isMounted) return; // Prevents crashes if the app closes
+    if (!isMounted) return;
 
-    // 20% chance to look for a door, 80% chance to just wander
     bool wantsToChangeRooms = _random.nextDouble() < 0.20;
 
     if (wantsToChangeRooms) {
@@ -42,29 +92,32 @@ class BunnyComponent extends PositionComponent with HasGameRef<BunnyGame> {
     }
   }
 
-  // --- UPDATED NORMAL HOPPING LOGIC ---
+  // --- NORMAL HOPPING LOGIC ---
   void _wanderInCurrentRoom() {
-    // 1. Find all invisible WanderZones in the current stage
     var availableZones = gameRef.world.children
         .whereType<WanderZone>()
         .where((zone) => zone.stageLevel == currentStage)
         .toList();
 
-    if (availableZones.isEmpty) return; // Failsafe
+    if (availableZones.isEmpty) return;
 
-    // 2. Pick a random zone (could be a room, could be a connecting path)
     WanderZone targetZone =
         availableZones[_random.nextInt(availableZones.length)];
-
-    // 3. Ask the zone for a random coordinate inside its boundaries
     Vector2 targetPosition = targetZone.getRandomPointInside();
 
-    // 4. Hop to it!
+    // 1. Turn around if needed, and change the animation to hopping!
+    _faceTarget(targetPosition);
+    current = BunnyState.hopping;
+
+    // 2. Hop to the target!
     add(
       MoveEffect.to(
         targetPosition,
         EffectController(duration: 2.0, curve: Curves.easeInOut),
         onComplete: () {
+          // 3. We arrived! Change animation back to idle
+          current = BunnyState.idle;
+
           int pauseDuration = 1 + _random.nextInt(3);
           Future.delayed(Duration(seconds: pauseDuration), _decideNextAction);
         },
@@ -74,45 +127,47 @@ class BunnyComponent extends PositionComponent with HasGameRef<BunnyGame> {
 
   // --- TELEPORT LOGIC ---
   void _findAndUseDoor() {
-    // Find all doors in the current stage
     var availableDoors = gameRef.world.children
         .whereType<BurrowDoor>()
         .where((door) => door.stageLevel == currentStage)
         .toList();
 
-    // If no doors exist (or stage isn't unlocked), just wander instead
     if (availableDoors.isEmpty) {
       _wanderInCurrentRoom();
       return;
     }
 
-    // Pick a random door
     BurrowDoor targetDoor =
         availableDoors[_random.nextInt(availableDoors.length)];
 
-    // 1. Hop to the door
+    // Turn to face the door and start hopping!
+    _faceTarget(targetDoor.position);
+    current = BunnyState.hopping;
+
     add(
       MoveEffect.to(
         targetDoor.position,
         EffectController(duration: 2.0, curve: Curves.easeInOut),
         onComplete: () {
-          // 2. Shrink down (entering the hole)
+          // We reached the door, shrink down into the hole!
           add(
             ScaleEffect.to(
               Vector2.zero(),
               EffectController(duration: 0.5),
               onComplete: () {
-                // 3. TELEPORT!
+                // TELEPORT!
                 position = targetDoor.teleportDestination;
                 currentStage = targetDoor.destinationStage;
 
-                // 4. Grow back to normal size (popping out of the new hole)
+                // Pop out of the new hole!
+                // We use isFacingRight to ensure we don't accidentally un-flip the sprite while growing
                 add(
                   ScaleEffect.to(
-                    Vector2.all(1.0),
+                    Vector2(isFacingRight ? 1.0 : -1.0, 1.0),
                     EffectController(duration: 0.5),
                     onComplete: () {
-                      // Wait a second, then resume normal wandering
+                      // Change back to idle and wait a second before moving again
+                      current = BunnyState.idle;
                       Future.delayed(
                         const Duration(seconds: 1),
                         _decideNextAction,

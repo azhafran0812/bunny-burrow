@@ -24,3 +24,14 @@ IN:
 Mentransisikan Bunny Burrow ke pola MVVM merupakan tantangan yang cukup besar, tetapi pengalaman tersebut secara fundamental mengubah cara saya memandang manajemen state. Pada awalnya, komponen Flame dan widget Flutter saya langsung mengakses database Hive, sehingga kode menjadi berantakan dan sulit untuk di-debug. Saya kemudian memisahkan akses data ke dalam PlayerRepository dan membungkusnya dengan ViewModel berbasis ChangeNotifier, yang berhasil menyelesaikan masalah tersebut.
 
 Tantangan teknis terbesar yang saya hadapi adalah menjembatani State Management standar Flutter dengan Game Engine Flame, karena Flame berjalan di luar struktur widget tree Flutter yang normal. Saya mengatasinya dengan membungkus seluruh MaterialApp menggunakan ChangeNotifierProvider, lalu meneruskan GameViewModel yang telah diinisialisasi langsung ke konstruktor BunnyGame. Dengan pendekatan ini, elemen interaktif dalam game (seperti Ancestor Carrot) dapat memicu logika pada ViewModel yang sama persis dengan yang dipantau oleh widget Consumer pada antarmuka pengguna. Tugas ini sangat memperkuat pemahaman saya tentang perancangan arsitektur aplikasi yang skalabel dan mudah dipelihara.
+
+## AFL 3: Unit Testing Implementation
+
+**Chosen Functionality:** For the unit testing assignment, I chose to test the core progression math and shop logic located in the `GameViewModel` class.
+
+**Logic Being Tested:** The tests evaluate the isolated business logic responsible for the in-game economy. Specifically, it tests:
+1. State manipulation (`addJoy`), ensuring currency correctly updates the local repository.
+2. Mathematical calculations (`calculateTapUpgradeCost`), verifying that the exponential cost scaling formula accurately calculates upcoming upgrade prices based on the player's current level.
+3. Conditional logic (`buyTapUpgrade`), ensuring that transactions only process if the player has sufficient funds, and that currency deductions and level increments happen synchronously.
+
+Because this application uses the MVVM design pattern, I was able to test this logic in complete isolation without needing to spin up the Flutter UI or the Flame Game Engine. The tests strictly follow the **Arrange-Act-Assert (AAA)** pattern to ensure clear, maintainable, and highly readable test coverage.
