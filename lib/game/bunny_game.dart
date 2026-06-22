@@ -12,10 +12,16 @@ import '../models/furniture_model.dart';
 import '../components/dirt_block.dart';
 import '../viewmodels/game_viewmodel.dart';
 
+// --- ADDED THESE TWO MISSING IMPORTS ---
+import '../components/burrow_door.dart';
+import '../components/bunny_component.dart';
+
 class BunnyGame extends FlameGame
     with WidgetsBindingObserver, PanDetector, ScrollDetector {
-      final GameViewModel viewModel;
-      BunnyGame(this.viewModel);
+  final GameViewModel viewModel;
+
+  BunnyGame(this.viewModel);
+
   double _secondTicker = 0.0;
   final int maxOfflineSeconds = 12 * 60 * 60;
   int lastOfflineEarnings = 0;
@@ -29,6 +35,7 @@ class BunnyGame extends FlameGame
   @override
   Color backgroundColor() => const Color(0xFF8B5A2B);
 
+  // --- WE MERGED BOTH ONLOAD METHODS INTO THIS SINGLE ONE ---
   @override
   Future<void> onLoad() async {
     super.onLoad();
@@ -46,8 +53,40 @@ class BunnyGame extends FlameGame
     final ancestorCarrot = AncestorCarrot();
     ancestorCarrot.position = Vector2(size.x / 2, size.y / 2 + 200);
 
-    // 2. CRITICAL FIX: Add the carrot to the WORLD, not the screen glass!
+    // 2. Add the carrot to the WORLD
     world.add(ancestorCarrot);
+
+    // 3. SETUP DOORS
+    // Door in Stage 1 that leads down to Stage 2
+    world.add(
+      BurrowDoor(
+        stageLevel: 1,
+        position: Vector2(100, 800), // Bottom left of Stage 1
+        teleportDestination: Vector2(100, 1000), // Top left of Stage 2
+        destinationStage: 2,
+      ),
+    );
+
+    // Door in Stage 2 that leads back up to Stage 1
+    world.add(
+      BurrowDoor(
+        stageLevel: 2,
+        position: Vector2(100, 1000),
+        teleportDestination: Vector2(100, 800),
+        destinationStage: 1,
+      ),
+    );
+
+    // 4. SPAWN INITIAL BUNNIES
+    // Spawn 3 bunnies in Stage 1 to test it out!
+    for (int i = 0; i < 3; i++) {
+      world.add(
+        BunnyComponent(
+          currentStage: 1,
+          startPosition: Vector2(size.x / 2, 400 + (i * 50)),
+        ),
+      );
+    }
   }
 
   void _loadPlacedFurniture() {
@@ -65,7 +104,6 @@ class BunnyGame extends FlameGame
       final component = FurnitureComponent(model: model, tileSize: tileSize);
       component.position += gridOrigin;
 
-      // CRITICAL FIX: Add furniture to the WORLD
       world.add(component);
     }
     box.put('passive_rate', currentPassiveRate);
@@ -171,7 +209,6 @@ class BunnyGame extends FlameGame
     if (currentLevel < 2) {
       for (int r = 0; r < 7; r++) {
         for (int c = 0; c < cols; c++) {
-          // CRITICAL FIX: Add to WORLD
           world.add(
             DirtBlock(
               stage: 2,
@@ -186,7 +223,6 @@ class BunnyGame extends FlameGame
     if (currentLevel < 3) {
       for (int r = 0; r < 8; r++) {
         for (int c = 0; c < cols; c++) {
-          // CRITICAL FIX: Add to WORLD
           world.add(
             DirtBlock(
               stage: 3,
@@ -203,23 +239,24 @@ class BunnyGame extends FlameGame
   void unlockNextStage() {
     final box = Hive.box('playerData');
     int currentLevel = box.get('burrow_level', defaultValue: 1);
-    
+
     if (currentLevel >= 3) return;
 
     int nextLevel = currentLevel + 1;
-    box.put('burrow_level', nextLevel); 
+    box.put('burrow_level', nextLevel);
 
-    world.children.whereType<DirtBlock>().where((block) => block.stage == nextLevel).forEach((block) {
-      block.crumble();
-    });
-    
-    // The top of the new stage
+    world.children
+        .whereType<DirtBlock>()
+        .where((block) => block.stage == nextLevel)
+        .forEach((block) {
+          block.crumble();
+        });
+
     double targetY = nextLevel == 2 ? 900.0 : 1600.0;
-    
-    // CRITICAL FIX: Use MoveEffect.to() instead of MoveToEffect()
+
     camera.viewfinder.add(
       MoveEffect.to(
-        Vector2(0, targetY - (size.y / 3)), // Scrolls down so the new area is visible
+        Vector2(0, targetY - (size.y / 3)),
         EffectController(duration: 1.5, curve: Curves.easeInOut),
       ),
     );
@@ -227,21 +264,18 @@ class BunnyGame extends FlameGame
     debugPrint("Stage $nextLevel Unlocked!");
   }
 
-// --- UPDATED SCROLL MATH FOR DESKTOP EMULATORS ---
+  // --- UPDATED SCROLL MATH FOR DESKTOP EMULATORS ---
   void _clampCamera() {
     final box = Hive.box('playerData');
     int currentLevel = box.get('burrow_level', defaultValue: 1);
 
-    // 1. MASSIVELY increased depths so large PC screens don't trap the camera!
     double maxDepth = 2500.0; // Level 1 Depth
     if (currentLevel == 2) maxDepth = 4000.0; // Level 2 Depth
     if (currentLevel >= 3) maxDepth = 6000.0; // Level 3 Depth
 
-    // 2. Calculate the limit
     double maxScroll = maxDepth - size.y;
     if (maxScroll < 0) maxScroll = 0;
 
-    // 3. Clamp the movement
     if (camera.viewfinder.position.y < 0) {
       camera.viewfinder.position.y = 0;
     } else if (camera.viewfinder.position.y > maxScroll) {
@@ -249,17 +283,14 @@ class BunnyGame extends FlameGame
     }
   }
 
-  // Handles Touch Screens (Click and drag)
   @override
   void onPanUpdate(DragUpdateInfo info) {
     camera.viewfinder.position.y -= info.delta.global.y;
     _clampCamera();
   }
 
-  // Handles Mouse Wheels (Edge / Chrome)
   @override
   void onScroll(PointerScrollInfo info) {
-    // Multiplied the scrollDelta by 3.0 so the mouse wheel feels much faster!
     camera.viewfinder.position.y += info.scrollDelta.global.y * 3.0;
     _clampCamera();
   }
