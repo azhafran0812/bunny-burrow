@@ -46,7 +46,7 @@ class BunnyGame extends FlameGame
     WidgetsBinding.instance.addObserver(this);
     camera.viewfinder.anchor = Anchor.topLeft;
 
-    // 1. LOAD YOUR CUSTOM BACKGROUND FIRST (So it draws behind everything)
+    
     final bgSprite = await loadSprite('warren_bg.png');
     world.add(
       SpriteComponent(
@@ -56,14 +56,14 @@ class BunnyGame extends FlameGame
       ),
     );
 
-    // Center the grid in the new massive 2250px wide map
+    
     gridOrigin = Vector2((mapWidth - (gridColumns * tileSize)) / 2, 800);
 
     _calculateOfflineEarnings();
     _loadPlacedFurniture();
     _generateDirtBlocks();
 
-// --- UPDATED CARROT POSITIONING ---
+
     final ancestorCarrot = AncestorCarrot();
 
     // Translating your top-left coordinates (849, 376) to match the center-anchored component math
@@ -95,7 +95,7 @@ class BunnyGame extends FlameGame
       ),
     );
 
-    // --- ADD THESE MISSING WANDER ZONES ---
+    // --- MISSING WANDER ZONES ---
     // A massive invisible box covering the walkable floor of Stage 1
     world.add(
       WanderZone(

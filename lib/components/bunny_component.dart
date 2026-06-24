@@ -6,6 +6,7 @@ import '../game/bunny_game.dart';
 import 'burrow_door.dart';
 import 'wander_zone.dart';
 
+
 // 1. Define the possible states for our animation group
 enum BunnyState { idle, hopping }
 

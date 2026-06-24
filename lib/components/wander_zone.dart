@@ -1,10 +1,10 @@
-import 'dart:math'; // <-- ADDED: Needed for the Random() tool
+import 'dart:math';
 import 'package:flame/components.dart';
 
 class WanderZone extends PositionComponent {
   final int stageLevel; // Which stage this zone belongs to
 
-  // <-- ADDED: Initialize the random number generator
+  
   final Random _random = Random();
 
   WanderZone({

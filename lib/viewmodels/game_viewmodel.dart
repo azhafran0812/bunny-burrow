@@ -14,6 +14,8 @@ class GameViewModel extends ChangeNotifier {
   int get tapLevel => _repository.tapLevel;
   int get burrowLevel => _repository.burrowLevel;
   int get passiveRate => _repository.passiveRate;
+  int get flowers => _repository.flowers;
+  int get carrots => _repository.carrots;
 
   // --- 2. Core Business Logic ---
 
@@ -29,7 +31,7 @@ class GameViewModel extends ChangeNotifier {
     }
   }
 
-  // --- 3. Shop & Upgrade Logic ---
+// --- 3. Shop & Upgrade Logic ---
 
   int calculateTapUpgradeCost() {
     int baseCost = 10;
@@ -46,15 +48,28 @@ class GameViewModel extends ChangeNotifier {
     }
   }
 
-  int get expansionCost => burrowLevel == 1 ? 500 : 5000;
+  int calculateBurrowUpgradeCost() {
+    if (burrowLevel == 1) return 500;
+    if (burrowLevel == 2) return 2500;
+    return 999999; // Max depth reached
+  }
 
-  bool buyBurrowExpansion() {
-    if (joy >= expansionCost && burrowLevel < 3) {
-      spendJoy(expansionCost);
+  void buyBurrowUpgrade() {
+    int cost = calculateBurrowUpgradeCost();
+    if (joy >= cost && burrowLevel < 3) {
+      spendJoy(cost); // Safely deducts the joy
       _repository.updateBurrowLevel(burrowLevel + 1);
       notifyListeners();
-      return true; // Returns true so the Flame Engine knows to crumble the dirt
     }
-    return false;
+  }
+
+  void addFlowers(int amount) {
+    _repository.updateFlowers(flowers + amount);
+    notifyListeners();
+  }
+
+  void addCarrots(int amount) {
+    _repository.updateCarrots(carrots + amount);
+    notifyListeners();
   }
 }

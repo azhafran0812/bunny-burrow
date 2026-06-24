@@ -14,4 +14,11 @@ class PlayerRepository {
   void updateTapLevel(int value) => _box.put('tap_level', value);
   void updateBurrowLevel(int value) => _box.put('burrow_level', value);
   void updatePassiveRate(int value) => _box.put('passive_rate', value);
+  
+  // --- NEW CURRENCIES ---
+  int get flowers => _box.get('flowers', defaultValue: 0);
+  void updateFlowers(int value) => _box.put('flowers', value);
+
+  int get carrots => _box.get('carrots', defaultValue: 0);
+  void updateCarrots(int value) => _box.put('carrots', value);
 }

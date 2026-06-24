@@ -1,35 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/gestures.dart'; // 1. ADD THIS IMPORT!
+import 'package:flutter/gestures.dart'; 
 
 import 'game/bunny_game.dart';
 import 'screens/hud_overlay.dart';
+import 'screens/main_hud_overlay.dart';
 import 'screens/upgrade_overlay.dart';
 import 'screens/navigation_overlay.dart';
 import 'screens/welcome_back_overlay.dart';
 import 'repositories/player_repository.dart';
 import 'viewmodels/game_viewmodel.dart';
 
-// 2. ADD THIS CUSTOM BEHAVIOR CLASS
+
 class GameScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
     PointerDeviceKind.touch,
     PointerDeviceKind
-        .mouse, // <--- This is the magic line that allows mouse dragging!
-    PointerDeviceKind.trackpad, // Allows laptop trackpad dragging
+        .mouse, 
+    PointerDeviceKind.trackpad,
   };
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
   await Hive.initFlutter();
 // Open the box and save it to a variable temporarily
   final box = await Hive.openBox('playerData');
 
-  // --- ADD THIS LINE TO NUKE THE SAVE FILE ---
+  // --- NUKE THE SAVE FILE ---
   await box.clear();
 
   final repository = PlayerRepository();
@@ -51,24 +58,21 @@ class BunnyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Bunny Burrow',
 
-      // 3. APPLY THE BEHAVIOR HERE
+      
       scrollBehavior: GameScrollBehavior(),
 
       home: Scaffold(
         body: GameWidget(
           game: BunnyGame(viewModel),
           overlayBuilderMap: {
-            'HudOverlay': (context, BunnyGame game) => const HudOverlay(),
-            'UpgradeOverlay': (context, BunnyGame game) =>
-                UpgradeOverlay(game: game),
-            'WelcomeBackOverlay': (context, BunnyGame game) =>
-                WelcomeBackOverlay(game: game),
+            'MainHudOverlay': (context, BunnyGame game) =>
+                MainHudOverlay(game: game),
             'NavigationOverlay': (context, BunnyGame game) =>
                 NavigationOverlay(game: game),
+            'WelcomeBackOverlay': (context, BunnyGame game) =>
+                WelcomeBackOverlay(game: game),
           },
-          initialActiveOverlays: const ['HudOverlay', 'UpgradeOverlay',
-            'NavigationOverlay'
-          ],
+          initialActiveOverlays: const ['MainHudOverlay', 'NavigationOverlay'],
         ),
       ),
     );
