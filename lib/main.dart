@@ -4,6 +4,7 @@ import 'package:flame/game.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/gestures.dart'; 
+import 'package:flutter/material.dart';
 
 import 'game/bunny_game.dart';
 import 'screens/hud_overlay.dart';
@@ -36,8 +37,7 @@ void main() async {
 // Open the box and save it to a variable temporarily
   final box = await Hive.openBox('playerData');
 
-  // --- NUKE THE SAVE FILE ---
-  await box.clear();
+    await box.clear();
 
   final repository = PlayerRepository();
   final viewModel = GameViewModel(repository);

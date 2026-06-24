@@ -1,7 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/effects.dart';
-import 'package:flutter/material.dart';
 import '../game/bunny_game.dart';
 import 'floating_text.dart';
 

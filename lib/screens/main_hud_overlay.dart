@@ -126,12 +126,12 @@ class _MainHudOverlayState extends State<MainHudOverlay> {
 
   Widget _buildClosedTray() {
     return Align(
-      alignment: Alignment.centerLeft, // Centered vertically on the left edge
+      alignment: Alignment.bottomCenter,
       child: GestureDetector(
         onTap: () => setState(() => isTrayExpanded = true),
         child: Image.asset(
           'assets/images/hud_closed_tray.png',
-          width: 140, // Much bigger!
+          width: 340, 
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => Container(
             width: 100,
