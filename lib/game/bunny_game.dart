@@ -1,3 +1,4 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/events.dart';
@@ -5,6 +6,8 @@ import 'package:flame/input.dart';
 import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:flame_tiled/flame_tiled.dart';
+import 'dart:math';
 
 import '../components/ancestor_carrot.dart';
 import '../components/furniture_component.dart';
@@ -14,9 +17,11 @@ import '../viewmodels/game_viewmodel.dart';
 import '../components/burrow_door.dart';
 import '../components/bunny_component.dart';
 import '../components/wander_zone.dart';
+import '../components/bridge_component.dart';
+import '../utils/constants.dart';
 
 class BunnyGame extends FlameGame
-    with WidgetsBindingObserver, PanDetector, ScrollDetector {
+    with WidgetsBindingObserver, PanDetector, ScrollDetector, HasCollisionDetection {
   final GameViewModel viewModel;
   BunnyGame(this.viewModel);
 
@@ -63,6 +68,81 @@ class BunnyGame extends FlameGame
     _loadPlacedFurniture();
     _generateDirtBlocks();
 
+    final tiledMap = await TiledComponent.load('map.tmx', Vector2.all(25));
+
+    final Map<String, WanderZone> loadedZones = {};
+
+final objectGroup = tiledMap.tileMap.getLayer<ObjectGroup>('WanderZones');
+
+if (objectGroup != null) {
+  for (final obj in objectGroup.objects) {
+    if (obj.isPolygon && obj.polygon.isNotEmpty) {
+      
+      final path = Path();
+      
+      // Move to the very first point's absolute global position
+      path.moveTo(obj.x + obj.polygon[0].x, obj.y + obj.polygon[0].y);
+      
+      // Trace the rest of the lines
+      for (int i = 1; i < obj.polygon.length; i++) {
+        path.lineTo(obj.x + obj.polygon[i].x, obj.y + obj.polygon[i].y);
+      }
+      
+      // Close the loop to finish the shape
+      path.close();
+
+      final zone = WanderZone(
+        stageLevel: obj.properties.getValue('stageLevel') ?? 1,
+        path: path,
+      );
+      
+      zone.priority = 10; // Draw above the background
+      loadedZones[obj.name] = zone;
+      await world.add(zone); 
+    }
+  }
+
+      camera.viewfinder.position = Vector2(
+        500,
+        1000,
+      ); // Adjust these to your map's center
+      camera.viewfinder.anchor = Anchor.topLeft;
+      
+    }
+    
+    final bridgeGroup = tiledMap.tileMap.getLayer<ObjectGroup>('Bridges');
+    if (bridgeGroup != null) {
+      for (final obj in bridgeGroup.objects) {
+        // Get the strings you typed in Tiled
+        final zoneAName = obj.properties.getValue<String>('zoneA');
+        final zoneBName = obj.properties.getValue<String>('zoneB');
+
+        // Look them up in our dictionary
+        final zoneA = loadedZones[zoneAName];
+        final zoneB = loadedZones[zoneBName];
+
+        // If we found both zones successfully, build the bridge!
+        if (zoneA != null && zoneB != null) {
+          final bridge = BridgeComponent(
+            zoneA: zoneA,
+            zoneB: zoneB,
+            position: Vector2(obj.x, obj.y),
+            size: Vector2(obj.width, obj.height),
+          );
+
+          // Don't forget to add it to the world
+          await world.add(bridge);
+          print(
+            "Successfully created bridge between $zoneAName and $zoneBName",
+          );
+        } else {
+          print(
+            "Error: Could not find zones $zoneAName or $zoneBName for the bridge.",
+          );
+        }
+      }
+    }
+
 
     final ancestorCarrot = AncestorCarrot();
 
@@ -95,45 +175,30 @@ class BunnyGame extends FlameGame
       ),
     );
 
-    // --- MISSING WANDER ZONES ---
-    // A massive invisible box covering the walkable floor of Stage 1
-    world.add(
-      WanderZone(
-        stageLevel: 1,
-        position: Vector2(200, 600), // Starts 200px from the left, 600px down
-        size: Vector2(
-          1850,
-          1000,
-        ), // Gives them a massive 1850x1000 area to hop in!
-      ),
-    );
+    spawnBunny(BunnyBreed.americanfuzzylop, 1);
+    spawnBunny(BunnyBreed.hollandlop, 1);
+    spawnBunny(BunnyBreed.lop, 1);
 
-    // A massive invisible box for Stage 2
-    world.add(
-      WanderZone(
-        stageLevel: 2,
-        position: Vector2(200, stage1Depth + 200),
-        size: Vector2(1850, 1000),
-      ),
-    );
+    debugMode = true;
+  }
 
-    // A massive invisible box for Stage 3
-    world.add(
-      WanderZone(
-        stageLevel: 3,
-        position: Vector2(200, stage2Depth + 200),
-        size: Vector2(1850, 1000),
-      ),
-    );
+  void spawnBunny(BunnyBreed breed, int targetStage) {
+    // 1. Find all zones that belong to the target stage
+    final validZones = world.children
+        .whereType<WanderZone>()
+        .where((zone) => zone.stageLevel == targetStage)
+        .toList();
 
-    // SPAWN INITIAL BUNNIES (Centered)
-    for (int i = 0; i < 3; i++) {
-      world.add(
-        BunnyComponent(
-          currentStage: 1,
-          startPosition: Vector2((mapWidth / 2) - 100 + (i * 100), 600),
-        ),
-      );
+    if (validZones.isNotEmpty) {
+      // 2. Pick a random zone from that stage to be the bunny's "home" zone
+      final startingZone = validZones[Random().nextInt(validZones.length)];
+
+      // 3. Create the bunny and inject the breed and zone
+      final bunny = BunnyComponent(breed: breed, currentZone: startingZone);
+
+      world.add(bunny);
+    } else {
+      print("Error: No WanderZones found for stage $targetStage!");
     }
   }
 

@@ -1,30 +1,41 @@
 import 'dart:math';
 import 'package:flame/components.dart';
+import 'package:flutter/material.dart';
 
-class WanderZone extends PositionComponent {
-  final int stageLevel; // Which stage this zone belongs to
+class WanderZone extends Component {
+  final int stageLevel;
+  final Path path;
 
-  
-  final Random _random = Random();
+  WanderZone({required this.stageLevel, required this.path});
 
-  WanderZone({
-    required this.stageLevel,
-    required Vector2 position,
-    required Vector2 size,
-  }) : super(position: position, size: size, anchor: Anchor.topLeft);
+  @override
+  void render(Canvas canvas) {
+    // This is just for debugMode so you can see it
+    final paint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    canvas.drawPath(path, paint);
+  }
 
-  // Helper method for the bunny to get a random X/Y coordinate inside this specific box
+  // Flutter's Path has a built-in exact contains check!
+  bool containsPoint(Vector2 point) {
+    return path.contains(Offset(point.x, point.y));
+  }
+
+  // Generate a random point inside this exact shape
   Vector2 getRandomPointInside() {
-    // Uses the component's width, height, and top-left position
-    double randomX =
-        position.x +
-        (size.x *
-            (0.1 +
-                0.8 *
-                    _random
-                        .nextDouble())); // Keeps them slightly off the very edges
-    double randomY = position.y + (size.y * (0.1 + 0.8 * _random.nextDouble()));
+    final bounds = path.getBounds();
+    final random = Random();
+    Vector2 randomPoint;
 
-    return Vector2(randomX, randomY);
+    do {
+      randomPoint = Vector2(
+        bounds.left + random.nextDouble() * bounds.width,
+        bounds.top + random.nextDouble() * bounds.height,
+      );
+    } while (!containsPoint(randomPoint));
+
+    return randomPoint;
   }
 }
