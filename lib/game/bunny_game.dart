@@ -18,6 +18,8 @@ import '../components/burrow_door.dart';
 import '../components/bunny_component.dart';
 import '../components/wander_zone.dart';
 import '../components/bridge_component.dart';
+import '../components/burrow_door_component.dart';
+import '../components/placement_node.dart';
 import '../utils/constants.dart';
 
 class BunnyGame extends FlameGame
@@ -126,11 +128,13 @@ if (objectGroup != null) {
           final bridge = BridgeComponent(
             zoneA: zoneA,
             zoneB: zoneB,
+            // Use the higher stage level of the two zones
+            targetStageLevel: zoneA.stageLevel > zoneB.stageLevel
+                ? zoneA.stageLevel
+                : zoneB.stageLevel,
             position: Vector2(obj.x, obj.y),
             size: Vector2(obj.width, obj.height),
           );
-
-          // Don't forget to add it to the world
           await world.add(bridge);
           print(
             "Successfully created bridge between $zoneAName and $zoneBName",
@@ -140,6 +144,66 @@ if (objectGroup != null) {
             "Error: Could not find zones $zoneAName or $zoneBName for the bridge.",
           );
         }
+      }
+    }
+
+// 4. Load the Burrow Doors
+    final doorGroup = tiledMap.tileMap.getLayer<ObjectGroup>('BurrowDoors');
+
+    if (doorGroup != null) {
+      for (final obj in doorGroup.objects) {
+        // 1. Get the string (e.g., "zone_2, zone_3")
+        final targetNamesString =
+            obj.properties.getValue<String>('targetZones') ?? '';
+
+        // 2. Split it by commas and trim extra spaces
+        final targetNames = targetNamesString
+            .split(',')
+            .map((name) => name.trim())
+            .toList();
+
+        // 3. Look up every name in our dictionary
+        final List<WanderZone> possibleZones = [];
+        for (final name in targetNames) {
+          final zone = loadedZones[name];
+          if (zone != null) {
+            possibleZones.add(zone);
+          }
+        }
+
+        // 4. If we found at least one valid zone, create the door
+        if (possibleZones.isNotEmpty) {
+          final door = BurrowDoorComponent(
+            targetZones: possibleZones,
+            position: Vector2(obj.x, obj.y),
+            size: Vector2(obj.width, obj.height),
+          );
+
+          await world.add(door);
+        }
+      }
+    }
+
+    // 5. Load the Furniture Placement Nodes
+    final nodeGroup = tiledMap.tileMap.getLayer<ObjectGroup>('PlacementNodes');
+
+    if (nodeGroup != null) {
+      for (final obj in nodeGroup.objects) {
+        // Grab the string property you set in Tiled (default to 'any' if you forgot to set it)
+        final fType = obj.properties.getValue<String>('furnitureType') ?? 'any';
+
+        final node = PlacementNode(
+          furnitureType: fType,
+          position: Vector2(obj.x, obj.y),
+          // If you used Points in Tiled instead of Rectangles, obj.width/height will be 0.
+          // In that case, default it to a standard size like 64x64.
+          size: Vector2(
+            obj.width > 0 ? obj.width : 64,
+            obj.height > 0 ? obj.height : 64,
+          ),
+        );
+
+        await world.add(node);
       }
     }
 
@@ -153,27 +217,6 @@ if (objectGroup != null) {
     ancestorCarrot.position = Vector2(centerX, centerY);
     world.add(ancestorCarrot);
 
-    // SETUP DOORS (Adjusted for the new 2250x5000 scale)
-    world.add(
-      BurrowDoor(
-        stageLevel: 1,
-        position: Vector2(mapWidth / 2, stage1Depth - 100), // Bottom of Stage 1
-        teleportDestination: Vector2(
-          mapWidth / 2,
-          stage1Depth + 150,
-        ), // Top of Stage 2
-        destinationStage: 2,
-      ),
-    );
-
-    world.add(
-      BurrowDoor(
-        stageLevel: 2,
-        position: Vector2(mapWidth / 2, stage1Depth + 150),
-        teleportDestination: Vector2(mapWidth / 2, stage1Depth - 100),
-        destinationStage: 1,
-      ),
-    );
 
     spawnBunny(BunnyBreed.americanfuzzylop, 1);
     spawnBunny(BunnyBreed.hollandlop, 1);
@@ -182,23 +225,24 @@ if (objectGroup != null) {
     debugMode = true;
   }
 
-  void spawnBunny(BunnyBreed breed, int targetStage) {
-    // 1. Find all zones that belong to the target stage
+  void spawnBunny(BunnyBreed breed, int preferredStage) {
+    final box = Hive.box('playerData');
+    final int currentLevel = box.get('burrow_level', defaultValue: 1);
+
+    // Ensure we only spawn in stages up to the player's current level
+    final int targetStage = preferredStage > currentLevel
+        ? currentLevel
+        : preferredStage;
+
     final validZones = world.children
         .whereType<WanderZone>()
         .where((zone) => zone.stageLevel == targetStage)
         .toList();
 
     if (validZones.isNotEmpty) {
-      // 2. Pick a random zone from that stage to be the bunny's "home" zone
       final startingZone = validZones[Random().nextInt(validZones.length)];
-
-      // 3. Create the bunny and inject the breed and zone
       final bunny = BunnyComponent(breed: breed, currentZone: startingZone);
-
       world.add(bunny);
-    } else {
-      print("Error: No WanderZones found for stage $targetStage!");
     }
   }
 

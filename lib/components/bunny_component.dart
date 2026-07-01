@@ -3,9 +3,12 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
+import 'package:hive/hive.dart';
 import '../game/bunny_game.dart';
 import '../utils/constants.dart';
 import '../components/bridge_component.dart';
+import '../components/burrow_door_component.dart';
+import '../components/wander_zone.dart';
 import 'burrow_door.dart';
 import 'wander_zone.dart';
 
@@ -63,7 +66,8 @@ class BunnyComponent extends SpriteAnimationGroupComponent<BunnyState>
         size: Vector2(
           32,
           32,
-        ), // Make the hitbox a bit smaller than the 128x128 sprite so it triggers closer to the center
+        ),
+        position: Vector2(size.x / 2, size.y / 2), // Make the hitbox a bit smaller than the 128x128 sprite so it triggers closer to the center
         anchor: Anchor.center,
       ),
     );
@@ -96,24 +100,47 @@ class BunnyComponent extends SpriteAnimationGroupComponent<BunnyState>
     current = BunnyState.hopping;
   }
 
-  @override
+@override
   void onCollisionStart(
     Set<Vector2> intersectionPoints,
     PositionComponent other,
   ) {
     super.onCollisionStart(intersectionPoints, other);
 
-    // Check if the thing we just bumped into is a bridge
+    final box = Hive.box('playerData');
+    final int currentBurrowLevel = box.get('burrow_level', defaultValue: 1);
+
+    // -- BRIDGE LOGIC --
     if (other is BridgeComponent) {
-      // If we are currently in Zone A, swap our home to Zone B!
-      if (currentZone == other.zoneA) {
-        currentZone = other.zoneB;
-        print("Bunny crossed into Zone B!");
+      if (other.targetStageLevel <= currentBurrowLevel) {
+        if (currentZone == other.zoneA) {
+          currentZone = other.zoneB;
+        } else if (currentZone == other.zoneB) {
+          currentZone = other.zoneA;
+        }
       }
-      // If we are currently in Zone B, swap our home to Zone A!
-      else if (currentZone == other.zoneB) {
-        currentZone = other.zoneA;
-        print("Bunny crossed back into Zone A!");
+    }
+
+    // -- BURROW DOOR LOGIC --
+    if (other is BurrowDoorComponent) {
+      // 1. Filter to get only unlocked zones
+      final unlockedZones = other.targetZones
+          .where((z) => z.stageLevel <= currentBurrowLevel)
+          .toList();
+
+      // 2. Define nextZone and pick randomly if zones are unlocked
+      if (unlockedZones.isNotEmpty) {
+        final random = Random();
+        final nextZone = unlockedZones[random.nextInt(unlockedZones.length)];
+
+        // 3. Swap the home zone and teleport
+        currentZone = nextZone;
+        position = currentZone.getRandomPointInside();
+
+        // 4. Reset movement state so the bunny doesn't get stuck
+        targetPosition = null;
+        current = BunnyState.idle;
+        _startWanderTimer();
       }
     }
   }

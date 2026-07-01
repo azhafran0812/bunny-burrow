@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="90" height="200" tilewidth="25" tileheight="25" infinite="0" nextlayerid="7" nextobjectid="36">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="90" height="200" tilewidth="25" tileheight="25" infinite="0" nextlayerid="10" nextobjectid="55">
  <layer id="1" name="Tile Layer 1" width="90" height="200">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -204,7 +204,10 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup color="#0055ff" id="3" name="WanderZones" class="super">
+ <imagelayer id="8" name="bg" visible="0">
+  <image source="../Bunny/warren_bg.png" width="2250" height="5000"/>
+ </imagelayer>
+ <objectgroup id="3" name="WanderZones" class="super">
   <object id="6" name="zone_1" x="110" y="646" width="434" height="158">
    <properties>
     <property name="stageLevel" type="int" value="1"/>
@@ -320,77 +323,184 @@
    <polygon points="50.9091,52.6061 169.183,16.1943 294.421,20.013 402.51,33.8636 480,52 515.333,96.667 471.671,140.43 351.311,145.357 201.386,127.792 84.2424,98.1815"/>
   </object>
  </objectgroup>
+ <objectgroup id="9" name="PlacementNodes">
+  <object id="48" x="357.333" y="1138.33">
+   <properties>
+    <property name="furnitureType" value="decor"/>
+    <property name="isOccupied" type="bool" value="false"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="49" x="231" y="668">
+   <properties>
+    <property name="furnitureType" value="bed"/>
+    <property name="isOccupied" type="bool" value="false"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="50" x="551" y="1586">
+   <properties>
+    <property name="furnitureType" value="bed"/>
+    <property name="isOccupied" type="bool" value="false"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="51" x="1793.33" y="1148">
+   <properties>
+    <property name="furnitureType" value="bed"/>
+    <property name="isOccupied" type="bool" value="false"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="52" x="2033.33" y="1162.67">
+   <properties>
+    <property name="furnitureType" value="decor"/>
+    <property name="isOccupied" type="bool" value="false"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="53" x="1554.67" y="1686.67">
+   <properties>
+    <property name="furnitureType" value="bed"/>
+    <property name="isOccupied" type="bool" value="false"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="54" x="1282.67" y="1693.33">
+   <properties>
+    <property name="furnitureType" value="decor"/>
+    <property name="isOccupied" type="bool" value="false"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
  <objectgroup id="5" name="Bridges">
   <object id="23" x="429.333" y="732" width="88.6667" height="73.3333">
    <properties>
+    <property name="stageLevel" type="int" value="1"/>
     <property name="zoneA" value="zone_1"/>
     <property name="zoneB" value="zone_2"/>
    </properties>
   </object>
   <object id="24" x="490" y="1137" width="38" height="36">
    <properties>
+    <property name="stageLevel" type="int" value="1"/>
     <property name="zoneA" value="zone_2"/>
     <property name="zoneB" value="zone_3"/>
    </properties>
   </object>
   <object id="25" x="926" y="1423.33" width="52.6667" height="51.3333">
    <properties>
+    <property name="stageLevel" type="int" value="1"/>
     <property name="zoneA" value="zone_2"/>
     <property name="zoneB" value="zone_4"/>
    </properties>
   </object>
   <object id="26" x="761" y="1635" width="61" height="55">
    <properties>
+    <property name="stageLevel" type="int" value="1"/>
     <property name="zoneA" value="zone_4"/>
     <property name="zoneB" value="zone_5"/>
    </properties>
   </object>
   <object id="27" x="862.667" y="1658.67" width="37.3333" height="48.6667">
    <properties>
+    <property name="stageLevel" type="int" value="1"/>
     <property name="zoneA" value="zone_4"/>
     <property name="zoneB" value="zone_6"/>
    </properties>
   </object>
   <object id="28" x="1454" y="1175.33" width="78.6667" height="47.3333">
    <properties>
+    <property name="stageLevel" type="int" value="1"/>
     <property name="zoneA" value="zone_4"/>
     <property name="zoneB" value="zone_7"/>
    </properties>
   </object>
   <object id="30" x="1857.33" y="1252.67" width="40" height="38">
    <properties>
+    <property name="stageLevel" type="int" value="1"/>
     <property name="zoneA" value="zone_7"/>
     <property name="zoneB" value="zone_8"/>
    </properties>
   </object>
   <object id="31" x="1313.33" y="1813.33" width="70" height="50">
    <properties>
+    <property name="stageLevel" type="int" value="2"/>
     <property name="zoneA" value="zone_6"/>
     <property name="zoneB" value="zone_14"/>
    </properties>
   </object>
   <object id="32" x="1498" y="2816.67" width="56" height="43.3333">
    <properties>
+    <property name="stageLevel" type="int" value="2"/>
     <property name="zoneA" value="zone_13"/>
     <property name="zoneB" value="zone_14"/>
    </properties>
   </object>
   <object id="33" x="681" y="4058" width="65" height="56">
    <properties>
+    <property name="stageLevel" type="int" value="3"/>
     <property name="zoneA" value="zone_15"/>
     <property name="zoneB" value="zone_16"/>
    </properties>
   </object>
   <object id="34" x="326" y="4793" width="78" height="76">
    <properties>
+    <property name="stageLevel" type="int" value="3"/>
     <property name="zoneA" value="zone_16"/>
     <property name="zoneB" value="zone_17"/>
    </properties>
   </object>
   <object id="35" x="1288" y="4741" width="66" height="67">
    <properties>
+    <property name="stageLevel" type="int" value="3"/>
     <property name="zoneA" value="zone_17"/>
     <property name="zoneB" value="zone_18"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="7" name="BurrowDoors">
+  <object id="36" x="206" y="1498" width="90" height="126">
+   <properties>
+    <property name="stageLevel" type="int" value="1"/>
+    <property name="targetZones" value="zone_9, zone_13, zone_11, zone_12"/>
+   </properties>
+  </object>
+  <object id="37" x="722" y="1524" width="80" height="108">
+   <properties>
+    <property name="stageLevel" type="int" value="1"/>
+    <property name="targetZones" value="zone_9, zone_13, zone_11, zone_12"/>
+   </properties>
+  </object>
+  <object id="38" x="492" y="2208" width="104" height="120">
+   <properties>
+    <property name="stageLevel" type="int" value="2"/>
+    <property name="targetZones" value="zone_5, zone_13, zone_11, zone_12, zone_15"/>
+   </properties>
+  </object>
+  <object id="41" x="1239.39" y="2766.67" width="81.8182" height="115.152">
+   <properties>
+    <property name="stageLevel" type="int" value="2"/>
+    <property name="targetZones" value="zone_5, zone_9, zone_11, zone_12, zone_15"/>
+   </properties>
+  </object>
+  <object id="42" x="1112.12" y="3278.79" width="103.03" height="115.152">
+   <properties>
+    <property name="stageLevel" type="int" value="2"/>
+    <property name="targetZones" value="zone_5, zone_13, zone_9, zone_12, zone_15"/>
+   </properties>
+  </object>
+  <object id="43" x="1524.24" y="3254.55" width="118.182" height="115.152">
+   <properties>
+    <property name="stageLevel" type="int" value="2"/>
+    <property name="targetZones" value="zone_5, zone_13, zone_11, zone_9, zone_15"/>
+   </properties>
+  </object>
+  <object id="44" x="388" y="3888" width="100" height="130">
+   <properties>
+    <property name="stageLevel" type="int" value="3"/>
+    <property name="targetZones" value="zone_5, zone_13, zone_11, zone_12, zone_9"/>
    </properties>
   </object>
  </objectgroup>
